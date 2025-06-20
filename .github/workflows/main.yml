@@ -8,36 +8,54 @@ on:
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    env:
+      # disable the Next.js telemetry prompt
+      NEXT_TELEMETRY_DISABLED: '1'
 
     steps:
       # 1. Checkout your code
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Set up Node.js
+      # 2. Cache node_modules
+      - name: Cache NPM
+        uses: actions/cache@v3
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      # 3. Cache Next.js build cache
+      - name: Cache Next.js build cache
+        uses: actions/cache@v3
+        with:
+          # Next.js writes caching data here
+          path: .next/cache
+          key: ${{ runner.os }}-next-cache-${{ hashFiles('**/package-lock.json','next.config.js') }}
+          restore-keys: |
+            ${{ runner.os }}-next-cache-
+
+      # 4. Set up Node.js
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
 
-      # 3. Install dependencies
+      # 5. Install dependencies
       - name: Install dependencies
         run: npm ci
 
-      # 4. Build your Next.js app
+      # 6. Build your Next.js app
       - name: Build production bundle
         run: npm run build
 
-      # 5. (Optional) Export static pages if using static export
-      # - name: Export static site
-      #   run: npm run export
-
-      # 6. Deploy to Firebase Hosting
+      # 7. Deploy to Firebase Hosting
       - name: Deploy to Firebase Hosting
         uses: w9jds/firebase-action@v12.9.0
         with:
           args: deploy --only hosting --project fir-rbac-app
+
         env:
-          # Generate this with `firebase login:ci` and add it under
-          # Settings → Secrets → Actions in GitHub as FIREBASE_TOKEN
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+
