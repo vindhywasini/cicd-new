@@ -1,0 +1,43 @@
+name: Deploy Next.js App to Firebase Hosting
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout your code
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2. Set up Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      # 3. Install dependencies
+      - name: Install dependencies
+        run: npm ci
+
+      # 4. Build your Next.js app
+      - name: Build production bundle
+        run: npm run build
+
+      # 5. (Optional) Export static pages if using static export
+      # - name: Export static site
+      #   run: npm run export
+
+      # 6. Deploy to Firebase Hosting
+      - name: Deploy to Firebase Hosting
+        uses: w9jds/firebase-action@v12.9.0
+        with:
+          args: deploy --only hosting --project fir-rbac-app
+        env:
+          # Generate this with `firebase login:ci` and add it under
+          # Settings → Secrets → Actions in GitHub as FIREBASE_TOKEN
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
